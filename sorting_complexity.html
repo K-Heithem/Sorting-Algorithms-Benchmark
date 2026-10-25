@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Benchmark & Complexité — Algorithmes de Tri</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg:      #060a10;
+      --card:    #0b1120;
+      --card2:   #0e1528;
+      --border:  rgba(255,255,255,0.08);
+      --text:    #e2e8f5;
+      --dim:     #64748b;
+      --accent:  #5b8cf5;
+
+      /* Algorithm color palette */
+      --bubble:    #ff4060;
+      --cocktail:  #e84393;
+      --selection: #ff8c00;
+      --insertion: #f5c400;
+      --comb:      #fd79a8;
+      --shell:     #00cec9;
+      --heap:      #a29bfe;
+      --merge:     #5b8cf5;
+      --quick:     #00d97e;
+      --bogo:      #ff7675;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── CANVAS PARTICLES ── */
+    #bg-canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.28; }
+    .wrap { position: relative; z-index: 1; max-width: 1320px; margin: 0 auto; padding: 1.5rem 1.5rem 5rem; }
+
+    /* ── HERO ── */
+    .hero { text-align: center; padding: 3.5rem 0 2.2rem; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(91,140,245,0.12);
+      border: 1px solid rgba(91,140,245,0.28);
+      border-radius: 99px;
+      padding: 0.35rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 1.2rem;
+    }
+    .hero h1 {
+      font-size: clamp(2rem, 4.8vw, 3.4rem);
+      font-weight: 900;
+      line-height: 1.15;
+      margin-bottom: 0.9rem;
+      background: linear-gradient(135deg, #ffffff 20%, #a29bfe 60%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero p {
+      color: var(--dim);
+      font-size: 0.98rem;
+      max-width: 650px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    /* ── SECTION HEADINGS ── */
+    .sec-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+    }
+    .sec-title {
+      font-size: 1.35rem;
+      font-weight: 800;
+      margin-bottom: 1.4rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .sec-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(to right, var(--border), transparent);
+    }
+
+    /* ── PANELS ── */
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 1.25rem;
+      padding: 1.75rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    }
+    .panel-sm { padding: 1.25rem; }
+
+    /* ── STATS CARDS GRID (9 ALGORITHMS) ── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 2rem;
+    }
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      padding: 1rem 0.75rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+    }
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--c);
+      border-radius: 3px 3px 0 0;
+    }
+    .stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+      border-color: rgba(255, 255, 255, 0.18);
+    }
+    .stat-name {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--dim);
+      margin-bottom: 0.45rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .stat-time {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--c);
+      line-height: 1;
+    }
+    .stat-unit { font-size: 0.68rem; color: var(--dim); margin-top: 0.35rem; }
+    .stat-rank {
+      position: absolute;
+      top: 0.45rem;
+      right: 0.5rem;
+      font-size: 0.65rem;
+      font-weight: 800;
+      padding: 0.15rem 0.38rem;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--dim);
+    }
+
+    /* ── RACE BARS ── */
+    .race-bars { display: flex; flex-direction: column; gap: 0.85rem; }
+    .race-row {
+      display: grid;
+      grid-template-columns: 160px 1fr 90px;
+      gap: 0.75rem;
+      align-items: center;
+    }
+    .race-label { font-size: 0.84rem; font-weight: 600; text-align: right; }
+    .race-track {
+      height: 32px;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 6px;
+      overflow: hidden;
+      position: relative;
+    }
+    .race-fill {
+      height: 100%;
+      border-radius: 6px;
+      transition: width 1.1s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      padding-left: 0.75rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #fff;
+      white-space: nowrap;
+      min-width: 2px;
+    }
+    .race-mult { font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; font-weight: 700; text-align: right; }
+
+    /* ── BOGO LAB WIDGET ── */
+    .bogo-card {
+      background: linear-gradient(135deg, rgba(255,118,117,0.06), rgba(162,155,254,0.04));
+      border: 1px solid rgba(255,118,117,0.22);
+      border-radius: 1.25rem;
+      padding: 1.6rem;
+      margin-bottom: 2rem;
+    }
+    .bogo-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.2rem; }
+    .bogo-title { display: flex; align-items: center; gap: 0.6rem; font-weight: 800; font-size: 1.15rem; color: #ff7675; }
+    .bogo-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      background: rgba(255,118,117,0.15);
+      border: 1px solid rgba(255,118,117,0.3);
+      padding: 0.2rem 0.6rem;
+      border-radius: 99px;
+      color: #ff7675;
+      font-weight: 700;
+    }
+    .bogo-sim {
+      display: flex;
+      gap: 0.6rem;
+      justify-content: center;
+      margin: 1.2rem 0;
+      flex-wrap: wrap;
+    }
+    .bogo-item {
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #161b2a;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #fff;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .bogo-item.sorted { border-color: #00d97e; color: #00d97e; background: rgba(0,217,126,0.1); }
+    .bogo-controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .bogo-btn {
+      background: #ff7675;
+      color: #fff;
+      border: none;
+      border-radius: 99px;
+      padding: 0.55rem 1.4rem;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: transform 0.15s, opacity 0.15s;
+    }
+    .bogo-btn:hover { transform: translateY(-2px); opacity: 0.92; }
+    .bogo-stats {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      color: var(--dim);
+    }
+    .bogo-stats strong { color: var(--text); }
+
+    /* ── CHART CONTROLS ── */
+    .ctrl-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.25rem; align-items: center; }
+    .ctrl-btn {
+      padding: 0.4rem 0.9rem;
+      border-radius: 99px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--dim);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.77rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.18s;
+    }
+    .ctrl-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .ctrl-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .ctrl-sep { width: 1px; height: 20px; background: var(--border); margin: 0 0.25rem; }
+    .ctrl-label { font-size: 0.72rem; color: var(--dim); font-weight: 600; }
+    .chart-wrap { position: relative; height: 380px; }
+    .chart-wrap-sm { position: relative; height: 280px; }
+
+    /* ── SPLIT GRID ── */
+    .split-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 2rem; }
+    .split-head { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1rem; }
+    .split-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .split-name { font-size: 0.85rem; font-weight: 700; }
+    .split-tag { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; padding: 0.15rem 0.5rem; border-radius: 4px; margin-left: 0.25rem; font-weight: 700; }
+    .slow-tag { background: rgba(255,64,96,0.12); color: var(--bubble); border: 1px solid rgba(255,64,96,0.25); }
+    .fast-tag { background: rgba(0,217,126,0.12); color: var(--quick); border: 1px solid rgba(0,217,126,0.25); }
+
+    /* ── TABLE ── */
+    .tbl-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+    thead { background: rgba(91,140,245,0.08); }
+    th {
+      padding: 0.8rem 1rem;
+      text-align: left;
+      font-weight: 700;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--dim);
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.81rem;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+    .td-name { font-family: 'Inter', sans-serif; font-weight: 600; font-size: 0.86rem; }
+    .green { color: #00d97e; }
+    .orange { color: #ff8c00; }
+    .red { color: #ff4060; }
+    .blue { color: #5b8cf5; }
+    .yellow { color: #f5c400; }
+    .purple { color: #a29bfe; }
+    .teal { color: #00cec9; }
+    .pink { color: #fd79a8; }
+    .stable { color: #00d97e; font-family: 'Inter', sans-serif; font-size: 0.75rem; font-weight: 600; }
+    .unstable { color: #ff4060; font-family: 'Inter', sans-serif; font-size: 0.75rem; font-weight: 600; }
+    .cdot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 0.45rem; vertical-align: middle; }
+
+    /* ── CALLOUT GRID ── */
+    .callout-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 2rem; }
+    .callout {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      padding: 1.2rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .callout-icon { font-size: 1.6rem; margin-bottom: 0.5rem; }
+    .callout-val { font-family: 'JetBrains Mono', monospace; font-size: 1.6rem; font-weight: 800; line-height: 1; }
+    .callout-desc { font-size: 0.78rem; color: var(--dim); margin-top: 0.4rem; line-height: 1.5; }
+
+    /* ── REVEAL ── */
+    .reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+    .reveal.visible { opacity: 1; transform: none; }
+
+    @media (max-width: 900px) {
+      .split-grid { grid-template-columns: 1fr; }
+      .callout-grid { grid-template-columns: 1fr; }
+      .race-row { grid-template-columns: 120px 1fr 70px; }
+    }
+  </style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+<div class="wrap">
+
+<!-- ═══ HERO ═══ -->
+<header class="hero reveal">
+  <div class="badge">📊 Analyse Algorithmique & Benchmark Complet</div>
+  <h1>Temps d'Exécution & Complexité<br/>des Algorithmes de Tri</h1>
+  <p>Mesures réelles exécutées en local sur ce PC — tableaux aléatoires de <strong>500 à 8 000 éléments</strong> avec 9 algorithmes de tri + laboratoire Random Sort (Bogo Sort).</p>
+</header>
+
+<!-- ═══ STAT CARDS (at n=8000) ═══ -->
+<section class="reveal">
+  <div class="sec-label">À n = 8 000 éléments</div>
+  <div class="sec-title">Temps mesuré par algorithme (du plus rapide au plus lent)</div>
+  <div class="stats-row">
+    <!-- 1: Quick -->
+    <div class="stat-card" style="--c:var(--quick)">
+      <div class="stat-rank">#1</div>
+      <div class="stat-name">Quick Sort</div>
+      <div class="stat-time">0.0153</div>
+      <div class="stat-unit">secondes</div>
+    </div>
+    <!-- 2: Merge -->
+    <div class="stat-card" style="--c:var(--merge)">
+      <div class="stat-rank">#2</div>
+      <div class="stat-name">Merge Sort</div>
+      <div class="stat-time">0.0284</div>
+      <div class="stat-unit">secondes</div>
+    </div>
+    <!-- 3: Comb -->
+    <div class="stat-card" style="--c:var(--comb)">
+      <div class="stat-rank">#3</div>
+      <div class="stat-name">Comb Sort</div>
+      <div class="stat-time">0.0313</div>
+      <div class="stat-unit">secondes</div>
+    </div>
+    <!-- 4: Shell -->
+    <div class="stat-card" style="--c:var(--shell)">
+      <div class="stat-rank">#4</div>
+      <div class="stat-name">Shell Sort</div>
+      <div class="stat-time">0.0327</div>
+      <div class="stat-unit">secondes</div>
+    </div>
+    <!-- 5: Heap -->
+    <div class="stat-card" style="--c:var(--heap)">
+      <div class="stat-rank">#5</div>
+      <div class="stat-name">Heap Sort</div>
+      <div class="stat-time">0.0428</div>
+      <div class="stat-unit">secondes</div>
+    </div>
+    <!-- 6: Selection -->
+    <div class="stat-card" style="--c:var(--selection)">
+      <div class="stat-rank">#6</div>
+      <div class="stat-name">Selection</div>
+      <div class="stat-time">2.2262</div>
+      <div class="stat-unit">secondes</div>
+    </div>
+    <!-- 7: Insertion -->
+    <div class="stat-card" style="--c:var(--insertion)">
+      <div class="stat-rank">#7</div>
+      <div class="stat-name">Insertion</div>
+      <div class="stat-time">2.4454</div>
+      <div class="stat-unit">secondes</div>
+    </div>
+    <!-- 8: Cocktail -->
+    <div class="stat-card" style="--c:var(--cocktail)">
+      <div class="stat-rank">#8</div>
+      <div class="stat-name">Cocktail</div>
+      <div class="stat-time">4.3807</div>
+      <div class="stat-unit">secondes</div>
+    </div>
+    <!-- 9: Bubble -->
+    <div class="stat-card" style="--c:var(--bubble)">
+      <div class="stat-rank">#9</div>
+      <div class="stat-name">Bubble Sort</div>
+      <div class="stat-time">5.1598</div>
+      <div class="stat-unit">secondes</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ RANDOM SORT / BOGO SORT INTERACTIVE LAB ═══ -->
+<section class="reveal">
+  <div class="sec-label">Algorithme Probabiliste</div>
+  <div class="sec-title">🎲 Laboratoire Random Sort (Bogo Sort)</div>
+  <div class="bogo-card">
+    <div class="bogo-header">
+      <div class="bogo-title">
+        <span>🎲 Random Sort / Permutation Sort</span>
+        <span class="bogo-badge">Complexité : O((n+1)!)</span>
+      </div>
+      <p style="font-size:0.82rem;color:var(--dim);max-width:540px">
+        Shuffles aléatoires jusqu'à ce que la liste soit triée par miracle statistique. Impossible à tester à <em>n=8 000</em> car $8000! > 10^{27000}$ opérations requises !
+      </p>
+    </div>
+
+    <div class="bogo-sim" id="bogo-box">
+      <!-- Generated via JS -->
+    </div>
+
+    <div class="bogo-controls">
+      <label style="font-size:0.8rem;color:var(--dim)">Taille n :</label>
+      <select id="bogo-size" style="background:#0b1120;color:#fff;border:1px solid var(--border);border-radius:6px;padding:0.3rem 0.6rem;font-family:'JetBrains Mono'">
+        <option value="4">4 éléments (4! = 24 combinaisons)</option>
+        <option value="5" selected>5 éléments (5! = 120 combinaisons)</option>
+        <option value="6">6 éléments (6! = 720 combinaisons)</option>
+        <option value="7">7 éléments (7! = 5 040 combinaisons)</option>
+      </select>
+      <button class="bogo-btn" id="bogo-run-btn" onclick="startBogoSort()">
+        <span>▶ Lancer le Tri Aléatoire</span>
+      </button>
+      <div class="bogo-stats">
+        Tentatives : <strong id="bogo-attempts">0</strong> |
+        Temps : <strong id="bogo-time">0.000 s</strong> |
+        Statut : <strong id="bogo-status" style="color:#f5c400">En attente</strong>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SPEED RACE ═══ -->
+<section class="reveal">
+  <div class="sec-label">Comparaison relative à n = 8 000</div>
+  <div class="sec-title">🏁 Course de vitesse (plus court = plus rapide)</div>
+  <div class="panel">
+    <div class="race-bars" id="race-container"></div>
+    <p style="margin-top:1.1rem;font-size:0.78rem;color:var(--dim)">
+      × = facteur de ralentissement par rapport à <strong style="color:var(--quick)">Quick Sort</strong> (le champion à 0.0153 s).
+    </p>
+  </div>
+</section>
+
+<!-- ═══ CALLOUTS ═══ -->
+<section class="reveal">
+  <div class="callout-grid">
+    <div class="callout">
+      <div class="callout-icon">⚡</div>
+      <div class="callout-val" style="color:var(--quick)">337×</div>
+      <div class="callout-desc">Bubble Sort est <strong>337 fois plus lent</strong> que Quick Sort à n = 8 000.</div>
+    </div>
+    <div class="callout">
+      <div class="callout-icon">🌉</div>
+      <div class="callout-val" style="color:var(--shell)">0.032 s</div>
+      <div class="callout-desc"><strong>Comb Sort & Shell Sort</strong> rivalisent avec Merge/Quick grâce aux sauts de pas.</div>
+    </div>
+    <div class="callout">
+      <div class="callout-icon">📈</div>
+      <div class="callout-val" style="color:var(--bubble)">O(n²) vs O(n log n)</div>
+      <div class="callout-desc">Quand n quadruple, O(n²) est multiplié par <strong>16</strong> contre seulement <strong>~4.8</strong> pour O(n log n).</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ MAIN CHART ═══ -->
+<section class="reveal">
+  <div class="sec-label">Visualisation Interactive</div>
+  <div class="sec-title">Graphique Benchmark — Données Réelles Mesurées</div>
+  <div class="panel">
+    <div class="ctrl-row">
+      <span class="ctrl-label">Filtrer :</span>
+      <button class="ctrl-btn active" id="f-all"  onclick="filter('all')">Tous (9)</button>
+      <button class="ctrl-btn"        id="f-fast" onclick="filter('fast')">Rapides (O(n log n) & sous-quadratiques)</button>
+      <button class="ctrl-btn"        id="f-slow" onclick="filter('slow')">Lents (O(n²))</button>
+      <button class="ctrl-btn"        id="f-iter" onclick="filter('iter')">Itératifs</button>
+      <button class="ctrl-btn"        id="f-rec"  onclick="filter('rec')">Récursifs</button>
+      <div class="ctrl-sep"></div>
+      <span class="ctrl-label">Échelle Y :</span>
+      <button class="ctrl-btn active" id="s-linear" onclick="setScale('linear')">Linéaire</button>
+      <button class="ctrl-btn"        id="s-log"    onclick="setScale('log')">Logarithmique</button>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="mainChart"></canvas>
+    </div>
+    <p style="margin-top:0.85rem;font-size:0.76rem;color:var(--dim)">
+      💡 <strong style="color:var(--text)">Astuce :</strong> Basculez en échelle <em>Logarithmique</em> pour inspecter les écarts précis entre Quick Sort, Merge Sort, Comb Sort, Shell Sort et Heap Sort !
+    </p>
+  </div>
+</section>
+
+<!-- ═══ SPLIT VIEW ═══ -->
+<section class="reveal">
+  <div class="sec-label">Zoom par catégorie de complexité</div>
+  <div class="sec-title">Comparaison séparée à l'échelle naturelle de chaque groupe</div>
+  <div class="split-grid">
+    <!-- Slow O(n^2) -->
+    <div class="panel panel-sm">
+      <div class="split-head">
+        <div style="display:flex;gap:0.4rem">
+          <div class="split-dot" style="background:var(--bubble)"></div>
+          <div class="split-dot" style="background:var(--cocktail)"></div>
+          <div class="split-dot" style="background:var(--insertion)"></div>
+          <div class="split-dot" style="background:var(--selection)"></div>
+        </div>
+        <span class="split-name">Algorithmes O(n²)</span>
+        <span class="split-tag slow-tag">LENTS (~2s à 5s)</span>
+      </div>
+      <div class="chart-wrap-sm"><canvas id="slowChart"></canvas></div>
+    </div>
+    <!-- Fast O(n log n) -->
+    <div class="panel panel-sm">
+      <div class="split-head">
+        <div style="display:flex;gap:0.4rem">
+          <div class="split-dot" style="background:var(--quick)"></div>
+          <div class="split-dot" style="background:var(--merge)"></div>
+          <div class="split-dot" style="background:var(--comb)"></div>
+          <div class="split-dot" style="background:var(--shell)"></div>
+          <div class="split-dot" style="background:var(--heap)"></div>
+        </div>
+        <span class="split-name">Algorithmes O(n log n) & Avancés</span>
+        <span class="split-tag fast-tag">RAPIDES (< 0.05s)</span>
+      </div>
+      <div class="chart-wrap-sm"><canvas id="fastChart"></canvas></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ COMPLEXITY TABLE ═══ -->
+<section class="reveal">
+  <div class="sec-label">Référence Théorique & Pratique</div>
+  <div class="sec-title">Tableau Récapitulatif Big-O des Algorithmes</div>
+  <div class="panel" style="padding:0">
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Algorithme</th>
+            <th>Type</th>
+            <th>Meilleur cas</th>
+            <th>Cas moyen</th>
+            <th>Pire cas</th>
+            <th>Espace</th>
+            <th>Stabilité</th>
+            <th>Temps réel n=8 000</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- 1. Quick -->
+          <tr style="background:rgba(0,217,126,0.04)">
+            <td class="td-name"><span class="cdot" style="background:var(--quick)"></span>Quick Sort</td>
+            <td style="color:var(--dim)">Récursif</td>
+            <td class="green">Ω(n log n)</td>
+            <td class="green">Θ(n log n)</td>
+            <td class="red">O(n²)</td>
+            <td class="blue">O(log n)</td>
+            <td class="unstable">✘ Instable</td>
+            <td class="green" style="font-weight:700">0.0153 s 🏆</td>
+          </tr>
+          <!-- 2. Merge -->
+          <tr style="background:rgba(91,140,245,0.03)">
+            <td class="td-name"><span class="cdot" style="background:var(--merge)"></span>Merge Sort</td>
+            <td style="color:var(--dim)">Récursif</td>
+            <td class="green">Ω(n log n)</td>
+            <td class="green">Θ(n log n)</td>
+            <td class="green">O(n log n)</td>
+            <td class="orange">O(n)</td>
+            <td class="stable">✔ Stable</td>
+            <td class="blue" style="font-weight:700">0.0284 s</td>
+          </tr>
+          <!-- 3. Comb -->
+          <tr>
+            <td class="td-name"><span class="cdot" style="background:var(--comb)"></span>Comb Sort</td>
+            <td style="color:var(--dim)">Itératif (Gap)</td>
+            <td class="green">Ω(n log n)</td>
+            <td class="green">Θ(n log n)</td>
+            <td class="red">O(n²)</td>
+            <td class="blue">O(1)</td>
+            <td class="unstable">✘ Instable</td>
+            <td class="pink" style="font-weight:700">0.0313 s</td>
+          </tr>
+          <!-- 4. Shell -->
+          <tr>
+            <td class="td-name"><span class="cdot" style="background:var(--shell)"></span>Shell Sort</td>
+            <td style="color:var(--dim)">Itératif (Gap)</td>
+            <td class="green">Ω(n log n)</td>
+            <td class="teal">Θ(n^(3/2))</td>
+            <td class="red">O(n²)</td>
+            <td class="blue">O(1)</td>
+            <td class="unstable">✘ Instable</td>
+            <td class="teal" style="font-weight:700">0.0327 s</td>
+          </tr>
+          <!-- 5. Heap -->
+          <tr>
+            <td class="td-name"><span class="cdot" style="background:var(--heap)"></span>Heap Sort</td>
+            <td style="color:var(--dim)">Itératif (Heap)</td>
+            <td class="green">Ω(n log n)</td>
+            <td class="green">Θ(n log n)</td>
+            <td class="green">O(n log n)</td>
+            <td class="blue">O(1)</td>
+            <td class="unstable">✘ Instable</td>
+            <td class="purple" style="font-weight:700">0.0428 s</td>
+          </tr>
+          <!-- 6. Selection -->
+          <tr>
+            <td class="td-name"><span class="cdot" style="background:var(--selection)"></span>Selection Sort</td>
+            <td style="color:var(--dim)">Itératif</td>
+            <td class="red">Ω(n²)</td>
+            <td class="red">Θ(n²)</td>
+            <td class="red">O(n²)</td>
+            <td class="blue">O(1)</td>
+            <td class="unstable">✘ Instable</td>
+            <td class="orange" style="font-weight:700">2.2262 s</td>
+          </tr>
+          <!-- 7. Insertion -->
+          <tr>
+            <td class="td-name"><span class="cdot" style="background:var(--insertion)"></span>Insertion Sort</td>
+            <td style="color:var(--dim)">Itératif</td>
+            <td class="green">Ω(n)</td>
+            <td class="red">Θ(n²)</td>
+            <td class="red">O(n²)</td>
+            <td class="blue">O(1)</td>
+            <td class="stable">✔ Stable</td>
+            <td class="yellow" style="font-weight:700">2.4454 s</td>
+          </tr>
+          <!-- 8. Cocktail -->
+          <tr>
+            <td class="td-name"><span class="cdot" style="background:var(--cocktail)"></span>Cocktail Shaker</td>
+            <td style="color:var(--dim)">Itératif</td>
+            <td class="green">Ω(n)</td>
+            <td class="red">Θ(n²)</td>
+            <td class="red">O(n²)</td>
+            <td class="blue">O(1)</td>
+            <td class="stable">✔ Stable</td>
+            <td class="red" style="font-weight:700">4.3807 s</td>
+          </tr>
+          <!-- 9. Bubble -->
+          <tr>
+            <td class="td-name"><span class="cdot" style="background:var(--bubble)"></span>Bubble Sort</td>
+            <td style="color:var(--dim)">Itératif</td>
+            <td class="green">Ω(n)</td>
+            <td class="red">Θ(n²)</td>
+            <td class="red">O(n²)</td>
+            <td class="blue">O(1)</td>
+            <td class="stable">✔ Stable</td>
+            <td class="red" style="font-weight:700">5.1598 s</td>
+          </tr>
+          <!-- 10. Random / Bogo -->
+          <tr style="background:rgba(255,118,117,0.04)">
+            <td class="td-name"><span class="cdot" style="background:var(--bogo)"></span>Random / Bogo Sort</td>
+            <td style="color:var(--dim)">Probabiliste</td>
+            <td class="green">Ω(n)</td>
+            <td class="red">Θ((n+1)!)</td>
+            <td class="red">O(∞)</td>
+            <td class="blue">O(1)</td>
+            <td class="unstable">✘ Instable</td>
+            <td style="color:#ff7675;font-weight:700">> 10²⁷⁰⁰ s (incalculable)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+</div><!-- .wrap -->
+
+<script>
+/* ── CANVAS PARTICLES ── */
+(function(){
+  const c = document.getElementById('bg-canvas');
+  const ctx = c.getContext('2d');
+  const resize = () => { c.width = innerWidth; c.height = innerHeight; };
+  resize();
+  addEventListener('resize', resize);
+  const P = Array.from({length: 60}, () => ({
+    x: Math.random() * innerWidth,
+    y: Math.random() * innerHeight,
+    r: Math.random() * 1.3 + 0.3,
+    vx: (Math.random() - 0.5) * 0.25,
+    vy: (Math.random() - 0.5) * 0.25,
+    a: Math.random() * 0.45 + 0.15
+  }));
+  function draw(){
+    ctx.clearRect(0, 0, c.width, c.height);
+    P.forEach(p => {
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0) p.x = c.width;
+      if (p.x > c.width) p.x = 0;
+      if (p.y < 0) p.y = c.height;
+      if (p.y > c.height) p.y = 0;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(91,140,245,${p.a})`;
+      ctx.fill();
+    });
+    for (let i = 0; i < P.length; i++) {
+      for (let j = i + 1; j < P.length; j++) {
+        const dx = P[i].x - P[j].x, dy = P[i].y - P[j].y;
+        const d = Math.sqrt(dx * dx + dy * dy);
+        if (d < 110) {
+          ctx.beginPath();
+          ctx.moveTo(P[i].x, P[i].y);
+          ctx.lineTo(P[j].x, P[j].y);
+          ctx.strokeStyle = `rgba(91,140,245,${0.08 * (1 - d / 110)})`;
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+/* ── REVEAL ON SCROLL ── */
+document.querySelectorAll('.reveal').forEach(el => {
+  new IntersectionObserver(([e]) => {
+    if (e.isIntersecting) el.classList.add('visible');
+  }, { threshold: 0.05 }).observe(el);
+});
+
+/* ── BENCHMARK DATA (MEASURED ON THIS MACHINE) ── */
+const SIZES = [500, 1000, 2000, 3000, 5000, 8000];
+const LABELS = SIZES.map(n => n.toLocaleString('fr'));
+
+const DATA = {
+  quick:     [0.0009, 0.0017, 0.0037, 0.0062, 0.0101, 0.0153],
+  merge:     [0.0014, 0.0039, 0.0062, 0.0094, 0.0173, 0.0284],
+  comb:      [0.0010, 0.0026, 0.0066, 0.0101, 0.0172, 0.0313],
+  shell:     [0.0009, 0.0024, 0.0075, 0.0099, 0.0198, 0.0327],
+  heap:      [0.0017, 0.0041, 0.0115, 0.0140, 0.0256, 0.0428],
+  selection: [0.0083, 0.0351, 0.1389, 0.3108, 0.8041, 2.2262],
+  insertion: [0.0076, 0.0441, 0.1673, 0.3484, 0.8764, 2.4454],
+  cocktail:  [0.0150, 0.0799, 0.3009, 0.6197, 1.7309, 4.3807],
+  bubble:    [0.0170, 0.0794, 0.3309, 0.7694, 2.1799, 5.1598],
+};
+
+const ALGOS = [
+  { key: 'bubble',    label: 'Bubble Sort',          color: '#ff4060', speed: 'slow', type: 'iter' },
+  { key: 'cocktail',  label: 'Cocktail Shaker Sort',  color: '#e84393', speed: 'slow', type: 'iter' },
+  { key: 'insertion', label: 'Insertion Sort',        color: '#f5c400', speed: 'slow', type: 'iter' },
+  { key: 'selection', label: 'Selection Sort',        color: '#ff8c00', speed: 'slow', type: 'iter' },
+  { key: 'heap',      label: 'Heap Sort',             color: '#a29bfe', speed: 'fast', type: 'iter' },
+  { key: 'shell',     label: 'Shell Sort',            color: '#00cec9', speed: 'fast', type: 'iter' },
+  { key: 'comb',      label: 'Comb Sort',             color: '#fd79a8', speed: 'fast', type: 'iter' },
+  { key: 'merge',     label: 'Merge Sort',            color: '#5b8cf5', speed: 'fast', type: 'rec'  },
+  { key: 'quick',     label: 'Quick Sort',            color: '#00d97e', speed: 'fast', type: 'rec'  },
+];
+
+const chartDefaults = {
+  responsive: true,
+  maintainAspectRatio: false,
+  animation: { duration: 750, easing: 'easeInOutQuart' },
+  interaction: { mode: 'index', intersect: false },
+  plugins: {
+    legend: {
+      labels: {
+        color: '#94a3b8',
+        font: { family: 'Inter', size: 11 },
+        usePointStyle: true,
+        pointStyleWidth: 12,
+        padding: 14
+      }
+    },
+    tooltip: {
+      backgroundColor: '#0b1120',
+      borderColor: 'rgba(255,255,255,0.12)',
+      borderWidth: 1,
+      titleColor: '#e2e8f5',
+      bodyColor: '#94a3b8',
+      padding: 10,
+      callbacks: {
+        label: c => ` ${c.dataset.label}: ${c.parsed.y.toFixed(4)} s`
+      }
+    }
+  },
+  scales: {
+    x: {
+      ticks: { color: '#64748b', font: { size: 10 } },
+      grid: { color: 'rgba(255,255,255,0.04)' },
+      title: { display: true, text: 'Taille du tableau  n', color: '#64748b', font: { size: 10 } }
+    },
+    y: {
+      ticks: { color: '#64748b', font: { size: 10 }, callback: v => v + ' s' },
+      grid: { color: 'rgba(255,255,255,0.04)' },
+      title: { display: true, text: 'Temps (secondes)', color: '#64748b', font: { size: 10 } }
+    }
+  }
+};
+
+function makeDataset(a, overrides = {}) {
+  return {
+    label: a.label,
+    data: DATA[a.key],
+    borderColor: a.color,
+    backgroundColor: a.color + '15',
+    borderWidth: 2.2,
+    pointRadius: 4.5,
+    pointBackgroundColor: a.color,
+    pointBorderColor: '#060a10',
+    pointBorderWidth: 1.5,
+    tension: 0.35,
+    fill: false,
+    ...overrides
+  };
+}
+
+/* ── MAIN CHART ── */
+const mainCtx = document.getElementById('mainChart').getContext('2d');
+const mainChart = new Chart(mainCtx, {
+  type: 'line',
+  data: { labels: LABELS, datasets: ALGOS.map(a => makeDataset(a)) },
+  options: JSON.parse(JSON.stringify(chartDefaults))
+});
+
+function filter(category) {
+  document.querySelectorAll('[id^="f-"]').forEach(b => b.classList.remove('active'));
+  document.getElementById('f-' + category).classList.add('active');
+
+  mainChart.data.datasets.forEach(ds => {
+    const a = ALGOS.find(x => x.label === ds.label);
+    if (category === 'all') ds.hidden = false;
+    else if (category === 'fast') ds.hidden = (a.speed !== 'fast');
+    else if (category === 'slow') ds.hidden = (a.speed !== 'slow');
+    else if (category === 'iter') ds.hidden = (a.type !== 'iter');
+    else if (category === 'rec')  ds.hidden = (a.type !== 'rec');
+  });
+  mainChart.update();
+}
+
+function setScale(scaleType) {
+  document.querySelectorAll('[id^="s-"]').forEach(b => b.classList.remove('active'));
+  document.getElementById('s-' + scaleType).classList.add('active');
+  mainChart.options.scales.y.type = scaleType === 'log' ? 'logarithmic' : 'linear';
+  if (scaleType === 'log') {
+    mainChart.options.scales.y.ticks.callback = v => {
+      if ([0.001, 0.01, 0.1, 1, 10].includes(v) || [0.005, 0.05, 0.5, 5].includes(v)) return v + 's';
+      return null;
+    };
+  } else {
+    mainChart.options.scales.y.ticks.callback = v => v + ' s';
+  }
+  mainChart.update();
+}
+
+/* ── SLOW CHART ── */
+const slowOpts = JSON.parse(JSON.stringify(chartDefaults));
+slowOpts.plugins.legend.labels.font.size = 10;
+new Chart(document.getElementById('slowChart').getContext('2d'), {
+  type: 'line',
+  data: {
+    labels: LABELS,
+    datasets: ['bubble', 'cocktail', 'insertion', 'selection'].map(k =>
+      makeDataset(ALGOS.find(a => a.key === k), { pointRadius: 4 })
+    )
+  },
+  options: slowOpts
+});
+
+/* ── FAST CHART ── */
+const fastOpts = JSON.parse(JSON.stringify(chartDefaults));
+fastOpts.plugins.legend.labels.font.size = 10;
+new Chart(document.getElementById('fastChart').getContext('2d'), {
+  type: 'line',
+  data: {
+    labels: LABELS,
+    datasets: ['quick', 'merge', 'comb', 'shell', 'heap'].map(k =>
+      makeDataset(ALGOS.find(a => a.key === k), { pointRadius: 4 })
+    )
+  },
+  options: fastOpts
+});
+
+/* ── SPEED RACE BARS ── */
+const raceContainer = document.getElementById('race-container');
+const fastestTime = DATA.quick[5]; // 0.0153
+const raceData = [
+  { label: 'Quick Sort',            time: DATA.quick[5],     color: '#00d97e' },
+  { label: 'Merge Sort',            time: DATA.merge[5],     color: '#5b8cf5' },
+  { label: 'Comb Sort',             time: DATA.comb[5],      color: '#fd79a8' },
+  { label: 'Shell Sort',            time: DATA.shell[5],     color: '#00cec9' },
+  { label: 'Heap Sort',             time: DATA.heap[5],      color: '#a29bfe' },
+  { label: 'Selection Sort',        time: DATA.selection[5], color: '#ff8c00' },
+  { label: 'Insertion Sort',        time: DATA.insertion[5], color: '#f5c400' },
+  { label: 'Cocktail Shaker Sort',  time: DATA.cocktail[5],  color: '#e84393' },
+  { label: 'Bubble Sort',           time: DATA.bubble[5],    color: '#ff4060' },
+];
+const maxTime = raceData[raceData.length - 1].time;
+
+raceData.forEach(r => {
+  const pct = Math.max(1.5, (r.time / maxTime * 100)).toFixed(1);
+  const mult = (r.time / fastestTime).toFixed(1);
+  const row = document.createElement('div');
+  row.className = 'race-row';
+  row.innerHTML = `
+    <div class="race-label" style="color:${r.color}">${r.label}</div>
+    <div class="race-track">
+      <div class="race-fill" style="background:${r.color};width:0%" data-pct="${pct}">
+        ${r.time.toFixed(4)} s
+      </div>
+    </div>
+    <div class="race-mult" style="color:${r.color}">${r.time === fastestTime ? '1.0× (Réf)' : '×' + mult}</div>`;
+  raceContainer.appendChild(row);
+});
+
+setTimeout(() => {
+  document.querySelectorAll('.race-fill').forEach(el => {
+    el.style.width = el.dataset.pct + '%';
+  });
+}, 350);
+
+/* ── BOGO LAB SIMULATOR ── */
+let bogoArray = [];
+let bogoRunning = false;
+let bogoTimerId = null;
+
+function initBogoBox() {
+  const size = parseInt(document.getElementById('bogo-size').value, 10);
+  bogoArray = [];
+  while (bogoArray.length < size) {
+    const val = Math.floor(Math.random() * 89) + 10;
+    if (!bogoArray.includes(val)) bogoArray.push(val);
+  }
+  renderBogoBox(false);
+  document.getElementById('bogo-attempts').textContent = '0';
+  document.getElementById('bogo-time').textContent = '0.000 s';
+  document.getElementById('bogo-status').textContent = 'Prêt';
+  document.getElementById('bogo-status').style.color = '#5b8cf5';
+}
+
+function renderBogoBox(isSorted) {
+  const box = document.getElementById('bogo-box');
+  box.innerHTML = '';
+  bogoArray.forEach(val => {
+    const d = document.createElement('div');
+    d.className = 'bogo-item' + (isSorted ? ' sorted' : '');
+    d.textContent = val;
+    box.appendChild(d);
+  });
+}
+
+function isBogoSorted(arr) {
+  for (let i = 0; i < arr.length - 1; i++) {
+    if (arr[i] > arr[i + 1]) return false;
+  }
+  return true;
+}
+
+function shuffleBogo(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+}
+
+document.getElementById('bogo-size').addEventListener('change', () => {
+  if (bogoRunning) stopBogoSort();
+  initBogoBox();
+});
+
+function startBogoSort() {
+  const btn = document.getElementById('bogo-run-btn');
+  if (bogoRunning) {
+    stopBogoSort();
+    return;
+  }
+  bogoRunning = true;
+  btn.innerHTML = '<span>⏹ Arrêter</span>';
+  btn.style.background = '#64748b';
+  document.getElementById('bogo-status').textContent = 'Tri en cours...';
+  document.getElementById('bogo-status').style.color = '#f5c400';
+
+  let attempts = 0;
+  const startTime = performance.now();
+
+  function step() {
+    if (!bogoRunning) return;
+    // Perform a batch of shuffles per frame for responsive UI
+    const batchSize = 15;
+    for (let k = 0; k < batchSize; k++) {
+      attempts++;
+      if (isBogoSorted(bogoArray)) {
+        renderBogoBox(true);
+        const elapsed = (performance.now() - startTime) / 1000;
+        document.getElementById('bogo-attempts').textContent = attempts.toLocaleString('fr');
+        document.getElementById('bogo-time').textContent = elapsed.toFixed(3) + ' s';
+        document.getElementById('bogo-status').textContent = '🎉 Trié !';
+        document.getElementById('bogo-status').style.color = '#00d97e';
+        stopBogoSort();
+        return;
+      }
+      shuffleBogo(bogoArray);
+    }
+    renderBogoBox(false);
+    const elapsed = (performance.now() - startTime) / 1000;
+    document.getElementById('bogo-attempts').textContent = attempts.toLocaleString('fr');
+    document.getElementById('bogo-time').textContent = elapsed.toFixed(3) + ' s';
+    bogoTimerId = requestAnimationFrame(step);
+  }
+  bogoTimerId = requestAnimationFrame(step);
+}
+
+function stopBogoSort() {
+  bogoRunning = false;
+  if (bogoTimerId) cancelAnimationFrame(bogoTimerId);
+  const btn = document.getElementById('bogo-run-btn');
+  btn.innerHTML = '<span>▶ Relancer le Tri</span>';
+  btn.style.background = '#ff7675';
+}
+
+initBogoBox();
+</script>
+</body>
+</html>

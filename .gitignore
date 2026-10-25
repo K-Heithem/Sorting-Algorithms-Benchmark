@@ -1,0 +1,22 @@
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+
+# IDE & Editors
+.idea/
+.vscode/
+.kilo/
+*.swp
+*.swo
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.log
+
+# Temp / Execution logs
+run_error.txt
+scratch/
